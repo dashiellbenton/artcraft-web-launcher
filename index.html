@@ -1,0 +1,1778 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ArtCraft Web Launcher</title>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #EAE5DC;
+      --surface: #F4F0E8;
+      --surface-raised: #FAF7F2;
+      --ink: #171A1D;
+      --muted: #5A6067;
+      --accent: #B83A1E;
+      --accent-hover: #992D15;
+      --ok: #256347;
+      --ok-bg: #E6F1EB;
+      --ok-border: #9CC5B0;
+      --line: #CCC5B8;
+      --line-strong: #9E9688;
+      --mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: "Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 2rem 1.25rem 5.5rem;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14.5px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .masthead {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem 1.5rem;
+      padding-bottom: 1.15rem;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.75rem;
+      font-weight: 650;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+    }
+
+    .edition-tag {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: var(--muted);
+      padding: 0.12rem 0.42rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+      background: var(--surface);
+    }
+
+    .sub {
+      margin: 0.35rem 0 0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .masthead-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .storage-pill {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+      padding: 0.35rem 0.65rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Focus rings */
+    button:focus-visible,
+    input:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.38rem 0.72rem;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 550;
+      line-height: 1.25;
+      border-radius: 3px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--surface-raised);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn.secondary {
+      background: var(--surface-raised);
+      color: var(--ink);
+      border-color: var(--line-strong);
+    }
+
+    .btn.secondary:hover:not(:disabled) {
+      border-color: var(--ink);
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .btn.danger {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn.danger:hover:not(:disabled) {
+      background: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .btn.sm {
+      padding: 0.28rem 0.56rem;
+      font-size: 0.8rem;
+    }
+
+    /* Network / CORS Proxy drawer */
+    .proxy-panel {
+      margin-top: 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      padding: 0.95rem 1.05rem;
+    }
+
+    .proxy-panel[hidden] { display: none; }
+
+    .proxy-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .proxy-head h2 {
+      margin: 0;
+      font-size: 0.94rem;
+      font-weight: 650;
+    }
+
+    .proxy-desc {
+      margin: 0 0 0.8rem;
+      font-size: 0.84rem;
+      color: var(--muted);
+      max-width: 78ch;
+    }
+
+    .custom-proxy-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .custom-proxy-row label {
+      font-size: 0.82rem;
+      font-weight: 550;
+      color: var(--ink);
+    }
+
+    .text-input {
+      padding: 0.42rem 0.65rem;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: var(--surface-raised);
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+    }
+
+    .text-input.mono {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      flex: 1 1 320px;
+    }
+
+    .proxy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 0.45rem;
+    }
+
+    .proxy-chip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      background: var(--surface-raised);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+    }
+
+    .proxy-chip .p-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .proxy-chip .p-state {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .proxy-chip .p-state.ok { color: var(--ok); font-weight: 600; }
+    .proxy-chip .p-state.err { color: var(--accent); }
+
+    /* Controls bar */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.9rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .controls-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      flex: 1 1 360px;
+    }
+
+    .search {
+      min-width: 240px;
+      flex: 0 1 300px;
+      padding: 0.44rem 0.68rem;
+      font: inherit;
+      font-size: 0.88rem;
+      color: var(--ink);
+      background: var(--surface-raised);
+      border: 1px solid var(--ink);
+      border-radius: 3px;
+    }
+
+    .filter-group {
+      display: inline-flex;
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .filter-btn {
+      padding: 0.38rem 0.65rem;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      border-right: 1px solid var(--line);
+      cursor: pointer;
+    }
+
+    .filter-btn:last-child { border-right: 0; }
+    .filter-btn:hover { color: var(--ink); }
+    .filter-btn.active {
+      background: var(--ink);
+      color: var(--surface-raised);
+    }
+
+    /* Catalog table */
+    .table-wrap {
+      background: var(--surface-raised);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      margin-top: 0.85rem;
+      overflow-x: auto;
+    }
+
+    .app-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .app-table th {
+      text-align: left;
+      font-size: 0.76rem;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--line-strong);
+      white-space: nowrap;
+    }
+
+    .app-table td {
+      padding: 0.72rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    .app-table tbody tr:last-child td { border-bottom: 0; }
+
+    .app-table tbody tr:hover {
+      background: #F5F1E9;
+    }
+
+    .app-name-cell {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .app-title {
+      font-weight: 650;
+      color: var(--ink);
+    }
+
+    .version-tag {
+      font-family: var(--mono);
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    .equiv-cell {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .size-cell {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.16rem 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .status-badge.cached {
+      background: var(--ok-bg);
+      border-color: var(--ok-border);
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .status-badge.unavailable {
+      border-style: dashed;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .ext-link {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.25rem 0.4rem;
+      border-radius: 3px;
+    }
+
+    .ext-link:hover {
+      color: var(--ink);
+      background: var(--surface);
+    }
+
+    .empty-row td {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+    }
+
+    /* Transfer popup */
+    .progress-popup {
+      position: fixed;
+      right: 1.15rem;
+      bottom: 1.15rem;
+      width: min(370px, calc(100vw - 2.3rem));
+      padding: 0.9rem 1rem;
+      background: var(--surface-raised);
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(23, 26, 29, 0.14);
+      z-index: 40;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .progress-title {
+      font-size: 0.88rem;
+      font-weight: 650;
+      margin: 0;
+    }
+
+    .progress-mb {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      margin: 0 0 0.5rem;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 120ms linear;
+    }
+
+    .bar-fill.indeterminate {
+      width: 35%;
+      animation: slide-indeterminate 1.1s ease-in-out infinite;
+    }
+
+    @keyframes slide-indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(300%); }
+    }
+
+    .progress-note {
+      margin: 0.5rem 0 0;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .progress-err {
+      margin: 0.45rem 0 0;
+      font-size: 0.8rem;
+      color: var(--accent);
+      word-break: break-word;
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.81rem;
+      color: var(--muted);
+      max-width: 82ch;
+    }
+
+    @media (max-width: 760px) {
+      .table-wrap { border: 0; background: transparent; }
+      .app-table thead { display: none; }
+      .app-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0.42rem;
+        padding: 0.85rem;
+        margin-bottom: 0.6rem;
+        background: var(--surface-raised);
+        border: 1px solid var(--line-strong);
+        border-radius: 4px;
+      }
+      .app-table td { padding: 0; border: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div>
+        <div class="title-row">
+          <h1>ArtCraft Web Launcher</h1>
+          <span class="edition-tag">Browser Cache &amp; Wasm Runner</span>
+        </div>
+        <p class="sub">
+          Fetch official ArtCraft web builds from GitHub Releases, unpack archives locally in IndexedDB, and launch them in a new browser tab.
+        </p>
+      </div>
+      <div class="masthead-meta">
+        <div class="storage-pill" id="storageSummary">0 cached · 0.00 MB</div>
+        <button id="toggleProxyBtn" class="btn secondary" type="button" aria-expanded="false">CORS proxies</button>
+      </div>
+    </header>
+
+    <section class="proxy-panel" id="proxyPanel" hidden>
+      <div class="proxy-head">
+        <h2>CORS Proxy Fallback Chain</h2>
+        <div class="actions">
+          <button id="testProxiesBtn" class="btn sm" type="button">Test proxies live</button>
+          <button id="closeProxyBtn" class="btn secondary sm" type="button">Hide</button>
+        </div>
+      </div>
+      <p class="proxy-desc">
+        GitHub release redirects lack <code>Access-Control-Allow-Origin</code> headers, and many free CORS proxies cap payloads at 1–50 MB.
+        The launcher prioritizes streaming <code>gh-proxy</code> relays verified with full CORS headers on 70+ MB builds, and checks response byte counts to reject truncated downloads.
+      </p>
+      <div class="custom-proxy-row">
+        <label for="customProxyInput">Custom proxy (optional):</label>
+        <input
+          id="customProxyInput"
+          class="text-input mono"
+          type="url"
+          placeholder="https://your-worker.workers.dev/?url={url}"
+          autocomplete="off"
+        />
+        <button id="saveCustomProxyBtn" class="btn secondary sm" type="button">Save</button>
+        <button id="clearCustomProxyBtn" class="btn secondary sm" type="button">Clear</button>
+      </div>
+      <div class="proxy-grid" id="proxyGrid"></div>
+    </section>
+
+    <div class="controls">
+      <div class="controls-left">
+        <input
+          id="searchInput"
+          class="search"
+          type="search"
+          placeholder="Filter by app or software equivalent..."
+          autocomplete="off"
+        />
+        <div class="filter-group" role="group" aria-label="Filter apps">
+          <button class="filter-btn active" type="button" data-filter="all">All</button>
+          <button class="filter-btn" type="button" data-filter="cached">Cached</button>
+          <button class="filter-btn" type="button" data-filter="web">Web available</button>
+        </div>
+      </div>
+      <button id="clearAllBtn" class="btn danger" type="button" disabled>Delete all cached</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>Clean-roomed software</th>
+            <th>Archive</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="appRows"></tbody>
+      </table>
+    </div>
+
+    <footer>
+      ArtCraft web builds are downloaded from <code>github.com/storytold</code> releases via CORS-enabled streaming relays (with automatic <code>Range</code> resume on mid-stream stalls) and stored strictly in your browser's IndexedDB. Third-party product names remain the property of their respective owners.
+    </footer>
+  </div>
+
+  <aside class="progress-popup" id="progressPopup" hidden aria-live="polite">
+    <div class="progress-top">
+      <p class="progress-title" id="progressTitle">Downloading</p>
+      <div class="actions">
+        <button id="cancelTransferBtn" class="btn danger sm" type="button" hidden>Cancel</button>
+        <button id="dismissPopupBtn" class="btn secondary sm" type="button" hidden>Dismiss</button>
+      </div>
+    </div>
+    <p class="progress-mb" id="progressMb">0.00 MB</p>
+    <div class="bar-track">
+      <div class="bar-fill" id="progressFill"></div>
+    </div>
+    <p class="progress-note" id="progressNote" hidden></p>
+    <p class="progress-err" id="progressErr" hidden></p>
+  </aside>
+
+  <script>
+    const CUSTOM_PROXY_LS_KEY = "artcraft_custom_cors_proxy_v1";
+    const LS_KEY = "artcraft_launcher_cache_v1";
+    const DB_NAME = "ArtCraftWebCacheDB";
+    const STORE_NAME = "extracted_apps";
+
+    const IS_HTTP_ORIGIN = location.protocol === "http:" || location.protocol === "https:";
+
+    // Ordered by reliability on GitHub Releases & support for >70 MB streaming payloads with ACAO: *
+    const PROXY_BUILDERS = [
+      {
+        label: "gh-proxy.com",
+        note: "70+ MB · Range resume · ACAO: *",
+        supportsRange: true,
+        buildUrl: (u) => `https://gh-proxy.com/${u}`
+      },
+      {
+        label: "gh-proxy.org",
+        note: "70+ MB · Range resume · ACAO: *",
+        supportsRange: true,
+        buildUrl: (u) => `https://gh-proxy.org/${u}`
+      },
+      {
+        label: "edgeone.gh-proxy.com",
+        note: "EdgeOne CDN, 70+ MB, ACAO: *",
+        supportsRange: false,
+        buildUrl: (u) => `https://edgeone.gh-proxy.com/${u}`
+      },
+      {
+        label: "hk.gh-proxy.com",
+        note: "HK mirror, 70+ MB, ACAO: *",
+        supportsRange: false,
+        buildUrl: (u) => `https://hk.gh-proxy.com/${u}`
+      },
+      {
+        label: "cdn.gh-proxy.com",
+        note: "CDN mirror, 70+ MB, ACAO: *",
+        supportsRange: false,
+        buildUrl: (u) => `https://cdn.gh-proxy.com/${u}`
+      },
+      {
+        label: "v6.gh-proxy.com",
+        note: "IPv6/dual-stack, 70+ MB, ACAO: *",
+        supportsRange: false,
+        buildUrl: (u) => `https://v6.gh-proxy.com/${u}`
+      },
+      ...(IS_HTTP_ORIGIN
+        ? [{
+            label: "proxy.corsfix.com",
+            note: "70+ MB on http(s) origins",
+            supportsRange: false,
+            buildUrl: (u) => `https://proxy.corsfix.com/?${u}`
+          }]
+        : []),
+      {
+        label: "api.cors.lol",
+        note: "Fallback (rate-limited)",
+        supportsRange: false,
+        buildUrl: (u) => `https://api.cors.lol/?url=${encodeURIComponent(u)}`
+      },
+      {
+        label: "api.allorigins.win/raw",
+        note: "Small-file fallback",
+        supportsRange: false,
+        buildUrl: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
+      }
+    ];
+
+    const ARTCRFT_APPS = [
+      { slug: "photocraft", name: "PhotoCraft", version: "v0.23.1", sizeMb: 15.32, cleanRoom: "Adobe Photoshop", url: "https://github.com/storytold/photocraft/releases/download/v0.23.1/photocraft-web-0.23.1.zip" },
+      { slug: "vectorcraft", name: "VectorCraft", version: "v0.24.1", sizeMb: 36.57, cleanRoom: "Adobe Illustrator", url: "https://github.com/storytold/vectorcraft/releases/download/v0.24.1/vectorcraft-web-0.24.1.zip" },
+      { slug: "filmcraft", name: "FilmCraft", version: "v0.20.1", sizeMb: 14.91, cleanRoom: "Adobe Premiere Pro", url: "https://github.com/storytold/filmcraft/releases/download/v0.20.1/filmcraft-web-0.20.1.zip" },
+      { slug: "lightcraft", name: "LightCraft", version: "v0.21.1", sizeMb: 71.11, cleanRoom: "Adobe Lightroom", url: "https://github.com/storytold/lightcraft/releases/download/v0.21.1/lightcraft-web-0.21.1.zip" },
+      { slug: "pdfcraft", name: "PdfCraft", version: "v0.22.0", sizeMb: 35.65, cleanRoom: "Adobe Acrobat", url: "https://github.com/storytold/pdfcraft/releases/download/v0.22.0/pdfcraft-web-0.22.0.zip" },
+      { slug: "effectcraft", name: "EffectCraft", version: "v0.25.1", sizeMb: 23.68, cleanRoom: "Adobe After Effects", url: "https://github.com/storytold/effectcraft/releases/download/v0.25.1/effectcraft-web-0.25.1.zip" },
+      { slug: "anicraft", name: "AniCraft", version: "v0.2.1", sizeMb: 0, noWebBuild: true, cleanRoom: "Adobe Animate", releaseUrl: "https://github.com/storytold/anicraft/releases/tag/v0.2.1" },
+      { slug: "designcraft", name: "DesignCraft", version: "v0.21.1", sizeMb: 30.68, cleanRoom: "Adobe InDesign", url: "https://github.com/storytold/designcraft/releases/download/v0.21.1/designcraft-web-0.21.1.zip" },
+      { slug: "figcraft", name: "FigCraft", version: "v0.18.1", sizeMb: 10.05, cleanRoom: "Figma", url: "https://github.com/storytold/figcraft/releases/download/v0.18.1/figcraft-web-0.18.1.zip" },
+      { slug: "texturecraft", name: "TextureCraft", version: "v0.6.1", sizeMb: 9.05, cleanRoom: "Adobe Substance 3D Painter", url: "https://github.com/storytold/texturecraft/releases/download/v0.6.1/texturecraft-web-0.6.1.zip" },
+      { slug: "materialcraft", name: "MaterialCraft", version: "v0.4.1", sizeMb: 5.00, cleanRoom: "Adobe Substance 3D Designer", url: "https://github.com/storytold/materialcraft/releases/download/v0.4.1/materialcraft-web-0.4.1.zip" },
+      { slug: "soundcraft", name: "SoundCraft", version: "v0.20.1", sizeMb: 6.85, cleanRoom: "Avid Pro Tools", url: "https://github.com/storytold/soundcraft/releases/download/v0.20.1/soundcraft-web-0.20.1.zip" },
+      { slug: "wordcraft", name: "WordCraft", version: "v0.19.1", sizeMb: 23.71, cleanRoom: "Microsoft Word", url: "https://github.com/storytold/wordcraft/releases/download/v0.19.1/wordcraft-web-0.19.1.zip" },
+      { slug: "deckcraft", name: "DeckCraft", version: "v0.19.1", sizeMb: 11.89, cleanRoom: "Microsoft PowerPoint", url: "https://github.com/storytold/deckcraft/releases/download/v0.19.1/deckcraft-web-0.19.1.zip" },
+      { slug: "cadcraft", name: "CADCraft", version: "v0.20.1", sizeMb: 10.89, cleanRoom: "Autodesk AutoCAD", url: "https://github.com/storytold/cadcraft/releases/download/v0.20.1/cadcraft-web-0.20.1.zip" },
+      { slug: "gridcraft", name: "GridCraft", version: "v0.19.1", sizeMb: 9.23, cleanRoom: "Microsoft Excel", url: "https://github.com/storytold/gridcraft/releases/download/v0.19.1/gridcraft-web-0.19.1.zip" }
+    ];
+
+    const memoryStore = new Map();
+    const proxyProbeStatus = new Map();
+    const blobUrlsBySlug = new Map();
+    let activeFilter = "all";
+    let activeTransferController = null;
+    let popupAutoHideTimer = null;
+
+    function openDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "slug" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbPutApp(slug, filesMap) {
+      const db = await openDb();
+      const serializedFiles = [];
+      for (const [path, fileObj] of filesMap.entries()) {
+        serializedFiles.push({ path, blob: fileObj.blob, type: fileObj.blob.type });
+      }
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put({ slug, files: serializedFiles, savedAt: Date.now() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function idbGetApp(slug) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const req = tx.objectStore(STORE_NAME).get(slug);
+        req.onsuccess = () => resolve(req.result ? req.result.files : null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbDeleteApp(slug) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).delete(slug);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function readRegistry() {
+      try {
+        return JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function writeRegistry(reg) {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(reg));
+      } catch {
+        // Ignore storage quota / file:// restriction
+      }
+      updateStorageSummary(reg);
+    }
+
+    function formatMb(bytes) {
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function updateStorageSummary(reg = readRegistry()) {
+      const items = Object.values(reg);
+      const totalBytes = items.reduce((sum, x) => sum + (x.bytes || 0), 0);
+      document.getElementById("storageSummary").textContent =
+        `${items.length} cached · ${formatMb(totalBytes)}`;
+      document.getElementById("clearAllBtn").disabled = items.length === 0;
+    }
+
+    function getCustomProxyTemplate() {
+      try {
+        return (localStorage.getItem(CUSTOM_PROXY_LS_KEY) || "").trim();
+      } catch {
+        return "";
+      }
+    }
+
+    function buildCustomProxyUrl(template, targetUrl) {
+      if (template.includes("{encoded}")) {
+        return template.replace(/\{encoded\}/g, encodeURIComponent(targetUrl));
+      }
+      if (template.includes("{url}")) {
+        return template.replace(/\{url\}/g, encodeURIComponent(targetUrl));
+      }
+      return `${template}${template.endsWith("/") || template.endsWith("?") || template.endsWith("=") ? "" : "/"}${targetUrl}`;
+    }
+
+    function getCandidateSources(targetUrl) {
+      const list = [];
+      const custom = getCustomProxyTemplate();
+      if (custom) {
+        list.push({
+          label: "Custom proxy",
+          supportsRange: true,
+          url: buildCustomProxyUrl(custom, targetUrl)
+        });
+      }
+      for (const p of PROXY_BUILDERS) {
+        list.push({
+          label: p.label,
+          supportsRange: Boolean(p.supportsRange),
+          url: p.buildUrl(targetUrl)
+        });
+      }
+      list.push({ label: "Direct GitHub release", supportsRange: false, url: targetUrl });
+      return list;
+    }
+
+    function guessMime(path) {
+      const lower = path.toLowerCase();
+      if (lower.endsWith(".html")) return "text/html; charset=utf-8";
+      if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "application/javascript; charset=utf-8";
+      if (lower.endsWith(".css")) return "text/css; charset=utf-8";
+      if (lower.endsWith(".wasm")) return "application/wasm";
+      if (lower.endsWith(".json")) return "application/json; charset=utf-8";
+      if (lower.endsWith(".txt") || lower.endsWith(".md")) return "text/plain; charset=utf-8";
+      if (lower.endsWith(".svg")) return "image/svg+xml";
+      if (lower.endsWith(".png")) return "image/png";
+      if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+      if (lower.endsWith(".woff2")) return "font/woff2";
+      if (lower.endsWith(".ttf")) return "font/ttf";
+      return "application/octet-stream";
+    }
+
+    function showProgress({ title, receivedBytes = 0, totalBytes = 0, speedBps = 0, note = "", error = "", transferring = false }) {
+      if (popupAutoHideTimer) {
+        clearTimeout(popupAutoHideTimer);
+        popupAutoHideTimer = null;
+      }
+
+      const popup = document.getElementById("progressPopup");
+      const mbEl = document.getElementById("progressMb");
+      const fillEl = document.getElementById("progressFill");
+      const noteEl = document.getElementById("progressNote");
+      const errEl = document.getElementById("progressErr");
+      const cancelBtn = document.getElementById("cancelTransferBtn");
+      const dismissBtn = document.getElementById("dismissPopupBtn");
+
+      popup.hidden = false;
+      document.getElementById("progressTitle").textContent = title;
+      cancelBtn.hidden = !transferring;
+      dismissBtn.hidden = transferring;
+
+      const speedSuffix = speedBps > 0 ? ` · ${(speedBps / (1024 * 1024)).toFixed(1)} MB/s` : "";
+      if (totalBytes > 0) {
+        const pct = Math.min(100, Math.round((receivedBytes / totalBytes) * 100));
+        mbEl.textContent = `${formatMb(receivedBytes)} / ${formatMb(totalBytes)} (${pct}%)${speedSuffix}`;
+        fillEl.classList.remove("indeterminate");
+        fillEl.style.width = `${pct}%`;
+      } else if (transferring) {
+        mbEl.textContent = `${formatMb(receivedBytes)} downloaded${speedSuffix}`;
+        fillEl.classList.add("indeterminate");
+        fillEl.style.width = "";
+      } else {
+        mbEl.textContent = receivedBytes > 0 ? `${formatMb(receivedBytes)}` : "0.00 MB";
+        fillEl.classList.remove("indeterminate");
+        fillEl.style.width = error ? "0%" : "100%";
+      }
+
+      noteEl.hidden = !note;
+      noteEl.textContent = note;
+      errEl.hidden = !error;
+      errEl.textContent = error;
+    }
+
+    function concatChunks(chunks, totalLength) {
+      const out = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        out.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return out;
+    }
+
+    async function readAttemptStream(targetUrl, appName, label, opts) {
+      const {
+        outerSignal,
+        rangeStart = null,
+        rangeEnd = null,
+        baseBytes = 0,
+        knownTotalBytes = 0,
+        startedAt = performance.now()
+      } = opts;
+
+      const controller = new AbortController();
+      const CONNECT_TIMEOUT_MS = 12000;
+      const STALL_TIMEOUT_MS = 10000;
+      let timer = null;
+      let timedOut = false;
+
+      const armTimer = (ms) => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, ms);
+      };
+
+      const onOuterAbort = () => controller.abort();
+      if (outerSignal) {
+        if (outerSignal.aborted) throw new DOMException("Cancelled", "AbortError");
+        outerSignal.addEventListener("abort", onOuterAbort, { once: true });
+      }
+
+      armTimer(CONNECT_TIMEOUT_MS);
+
+      const fetchInit = { signal: controller.signal };
+      if (rangeStart !== null) {
+        fetchInit.headers = {
+          Range: rangeEnd !== null ? `bytes=${rangeStart}-${rangeEnd}` : `bytes=${rangeStart}-`
+        };
+      }
+
+      const localChunks = [];
+      let localRead = 0;
+      let attemptTotalBytes = knownTotalBytes;
+
+      try {
+        const resp = await fetch(targetUrl, fetchInit);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+        if (rangeStart !== null && resp.status !== 206) {
+          throw new Error(`Relay returned HTTP ${resp.status} instead of 206 Partial Content`);
+        }
+        if (!resp.body) {
+          throw new Error("Empty response stream");
+        }
+
+        if (rangeStart === null) {
+          const cl = Number(resp.headers.get("content-length") || 0);
+          if (cl > 0) attemptTotalBytes = cl;
+        }
+
+        const reader = resp.body.getReader();
+        let lastUiUpdate = 0;
+        armTimer(STALL_TIMEOUT_MS);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          armTimer(STALL_TIMEOUT_MS);
+          localChunks.push(value);
+          localRead += value.length;
+
+          const now = performance.now();
+          if (now - lastUiUpdate > 80) {
+            lastUiUpdate = now;
+            const totalReceived = baseBytes + localRead;
+            const elapsedSec = Math.max(0.1, (now - startedAt) / 1000);
+            showProgress({
+              title: `Downloading ${appName}`,
+              receivedBytes: totalReceived,
+              totalBytes: attemptTotalBytes,
+              speedBps: totalReceived / elapsedSec,
+              note: rangeStart !== null ? `Resuming via ${label}` : `Relay: ${label}`,
+              transferring: true
+            });
+          }
+        }
+
+        return {
+          chunks: localChunks,
+          bytesRead: localRead,
+          totalBytes: attemptTotalBytes,
+          error: null
+        };
+      } catch (err) {
+        if (err.name === "AbortError" && outerSignal && outerSignal.aborted) {
+          throw err;
+        }
+        const reason = timedOut ? new Error("Stream stalled (>10s without data)") : err;
+        return {
+          chunks: localChunks,
+          bytesRead: localRead,
+          totalBytes: attemptTotalBytes,
+          error: reason
+        };
+      } finally {
+        if (timer) clearTimeout(timer);
+        if (outerSignal) outerSignal.removeEventListener("abort", onOuterAbort);
+      }
+    }
+
+    async function resumeViaRangeSlices(app, candidates, state, outerSignal, stalledLabel = "") {
+      const rangeRelays = candidates.filter((c) => c.supportsRange);
+      if (rangeRelays.length === 0 || state.totalBytes <= 0) {
+        return false;
+      }
+
+      const SLICE_SIZE = 8 * 1024 * 1024; // 8 MiB slices prevent mid-stream proxy stalls
+      let relayIdx = stalledLabel && rangeRelays[0].label === stalledLabel && rangeRelays.length > 1 ? 1 : 0;
+      let consecutiveFailures = 0;
+      const MAX_CONSECUTIVE_FAILURES = Math.max(6, rangeRelays.length * 4);
+
+      while (state.received < state.totalBytes) {
+        if (outerSignal.aborted) {
+          throw new DOMException("Download cancelled", "AbortError");
+        }
+
+        const relay = rangeRelays[relayIdx % rangeRelays.length];
+        const rangeStart = state.received;
+        const rangeEnd = Math.min(state.totalBytes - 1, rangeStart + SLICE_SIZE - 1);
+
+        showProgress({
+          title: `Downloading ${app.name}`,
+          receivedBytes: state.received,
+          totalBytes: state.totalBytes,
+          speedBps: state.received / Math.max(0.1, (performance.now() - state.startedAt) / 1000),
+          note: `Resuming from ${formatMb(rangeStart)} via ${relay.label}`,
+          transferring: true
+        });
+
+        const res = await readAttemptStream(relay.url, app.name, relay.label, {
+          outerSignal,
+          rangeStart,
+          rangeEnd,
+          baseBytes: state.received,
+          knownTotalBytes: state.totalBytes,
+          startedAt: state.startedAt
+        });
+
+        if (res.bytesRead > 0) {
+          state.chunks.push(...res.chunks);
+          state.received += res.bytesRead;
+          state.usedSource = `${relay.label} (resumed)`;
+          consecutiveFailures = 0;
+        }
+
+        if (res.error) {
+          consecutiveFailures++;
+          relayIdx++;
+          state.lastErr = res.error;
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            return false;
+          }
+        }
+      }
+
+      return state.received === state.totalBytes;
+    }
+
+    async function downloadWithProxyChain(app, outerSignal) {
+      const candidates = getCandidateSources(app.url);
+      let lastErr = new Error("No download source succeeded");
+      const failures = [];
+
+      for (let i = 0; i < candidates.length; i++) {
+        if (outerSignal.aborted) {
+          throw new DOMException("Download cancelled", "AbortError");
+        }
+        const candidate = candidates[i];
+        const startedAt = performance.now();
+
+        showProgress({
+          title: `Downloading ${app.name}`,
+          receivedBytes: 0,
+          totalBytes: 0,
+          note: `Attempt ${i + 1}/${candidates.length}: ${candidate.label}`,
+          transferring: true
+        });
+
+        const firstTry = await readAttemptStream(candidate.url, app.name, candidate.label, {
+          outerSignal,
+          startedAt
+        });
+
+        const state = {
+          chunks: [...firstTry.chunks],
+          received: firstTry.bytesRead,
+          totalBytes: firstTry.totalBytes,
+          usedSource: candidate.label,
+          startedAt,
+          lastErr: firstTry.error
+        };
+
+        // Check ZIP magic bytes right away if we received anything
+        if (state.received >= 2) {
+          const head = state.chunks[0];
+          if (head[0] !== 0x50 || head[1] !== 0x4b) {
+            failures.push(`${candidate.label}: Response was not a ZIP archive`);
+            continue;
+          }
+        }
+
+        // If full stream stalled or truncated partway through, resume automatically via Range slices!
+        const needsResume =
+          state.received > 0 &&
+          state.totalBytes > 0 &&
+          state.received < state.totalBytes;
+
+        if (needsResume) {
+          const resumedOk = await resumeViaRangeSlices(app, candidates, state, outerSignal, candidate.label);
+          if (!resumedOk) {
+            lastErr = state.lastErr || new Error(`Truncated at ${formatMb(state.received)}/${formatMb(state.totalBytes)}`);
+            failures.push(`${candidate.label}: ${lastErr.message}`);
+            continue;
+          }
+        } else if (firstTry.error || state.received === 0) {
+          lastErr = firstTry.error || new Error("Empty response");
+          failures.push(`${candidate.label}: ${lastErr.message}`);
+          continue;
+        } else if (state.totalBytes > 0 && state.received < state.totalBytes) {
+          lastErr = new Error(`Truncated transfer (${formatMb(state.received)} of ${formatMb(state.totalBytes)})`);
+          failures.push(`${candidate.label}: ${lastErr.message}`);
+          continue;
+        }
+
+        const zipBuffer = concatChunks(state.chunks, state.received);
+        if (zipBuffer.length < 4 || zipBuffer[0] !== 0x50 || zipBuffer[1] !== 0x4b) {
+          failures.push(`${candidate.label}: Response was not a ZIP archive`);
+          continue;
+        }
+
+        return {
+          zipBuffer,
+          received: state.received,
+          totalBytes: state.totalBytes || state.received,
+          usedSource: state.usedSource
+        };
+      }
+
+      throw new Error(failures.slice(-3).join(" | ") || lastErr.message);
+    }
+
+    function stripCommonRootPrefix(entries) {
+      const paths = entries.map((e) => e.name.replace(/^\/+/, ""));
+      if (paths.length === 0) return "";
+      const firstSlash = paths[0].indexOf("/");
+      if (firstSlash <= 0) return "";
+      const candidatePrefix = paths[0].slice(0, firstSlash + 1);
+      return paths.every((p) => p.startsWith(candidatePrefix)) ? candidatePrefix : "";
+    }
+
+    async function downloadAndUnzip(app) {
+      if (app.noWebBuild) return;
+      if (typeof JSZip === "undefined") {
+        showProgress({
+          title: app.name,
+          error: "JSZip failed to load from CDN. Check network access."
+        });
+        return;
+      }
+      if (activeTransferController) {
+        activeTransferController.abort();
+      }
+      const controller = new AbortController();
+      activeTransferController = controller;
+
+      try {
+        const { zipBuffer, received, totalBytes, usedSource } = await downloadWithProxyChain(app, controller.signal);
+
+        showProgress({
+          title: `Unpacking ${app.name}`,
+          receivedBytes: received,
+          totalBytes: totalBytes || received,
+          note: `Extracting archive in memory (${usedSource})`,
+          transferring: true
+        });
+
+        const zip = await JSZip.loadAsync(zipBuffer);
+        const filesMap = new Map();
+        const entries = Object.values(zip.files).filter((f) => !f.dir);
+        const rootPrefix = stripCommonRootPrefix(entries);
+
+        for (const entry of entries) {
+          const rawBytes = await entry.async("uint8array");
+          let cleanPath = entry.name.replace(/^\/+/, "");
+          if (rootPrefix && cleanPath.startsWith(rootPrefix)) {
+            cleanPath = cleanPath.slice(rootPrefix.length);
+          }
+          if (!cleanPath) continue;
+          const blob = new Blob([rawBytes], { type: guessMime(cleanPath) });
+          filesMap.set(cleanPath, { blob });
+        }
+
+        memoryStore.set(app.slug, filesMap);
+        try {
+          await idbPutApp(app.slug, filesMap);
+        } catch (idbErr) {
+          console.warn("IndexedDB save failed, keeping in memory:", idbErr);
+        }
+
+        const reg = readRegistry();
+        reg[app.slug] = {
+          bytes: received,
+          fileCount: filesMap.size,
+          url: app.url,
+          source: usedSource,
+          updatedAt: new Date().toISOString()
+        };
+        writeRegistry(reg);
+
+        showProgress({
+          title: `Ready: ${app.name}`,
+          receivedBytes: received,
+          totalBytes: totalBytes || received,
+          note: `Cached ${filesMap.size} files via ${usedSource}`,
+          transferring: false
+        });
+        popupAutoHideTimer = setTimeout(() => {
+          document.getElementById("progressPopup").hidden = true;
+        }, 2200);
+        renderTable();
+      } catch (err) {
+        if (err.name === "AbortError") {
+          showProgress({
+            title: `${app.name} cancelled`,
+            note: "Transfer aborted by user."
+          });
+        } else {
+          showProgress({
+            title: `${app.name} failed`,
+            error: `All CORS sources failed: ${err.message}`
+          });
+        }
+      } finally {
+        if (activeTransferController === controller) {
+          activeTransferController = null;
+        }
+      }
+    }
+
+    async function ensureAppInMemory(slug) {
+      if (memoryStore.has(slug)) return memoryStore.get(slug);
+      try {
+        const savedFiles = await idbGetApp(slug);
+        if (!savedFiles) return null;
+        const map = new Map();
+        for (const item of savedFiles) {
+          map.set(item.path, { blob: item.blob });
+        }
+        memoryStore.set(slug, map);
+        return map;
+      } catch {
+        return null;
+      }
+    }
+
+    function trackAppBlobUrl(slug, url) {
+      let urls = blobUrlsBySlug.get(slug);
+      if (!urls) {
+        urls = [];
+        blobUrlsBySlug.set(slug, urls);
+      }
+      urls.push(url);
+    }
+
+    function revokeAppBlobUrls(slug) {
+      const urls = blobUrlsBySlug.get(slug);
+      if (!urls) return;
+      for (const u of urls) URL.revokeObjectURL(u);
+      blobUrlsBySlug.delete(slug);
+    }
+
+    function resolveRelativePath(baseFilePath, specifier) {
+      if (!specifier || /^(?:[a-z]+:|data:|blob:|#)/i.test(specifier)) return null;
+      const cleanSpec = specifier.split("?")[0].split("#")[0];
+      if (cleanSpec.startsWith("/")) return cleanSpec.slice(1);
+      const baseParts = baseFilePath.split("/").slice(0, -1);
+      const specParts = cleanSpec.split("/");
+      const stack = [...baseParts];
+      for (const part of specParts) {
+        if (!part || part === ".") continue;
+        if (part === "..") stack.pop();
+        else stack.push(part);
+      }
+      return stack.join("/");
+    }
+
+    function buildVirtualBundleUrls(slug, filesMap) {
+      const urlByPath = new Map();
+      const nonJsPaths = [];
+      const jsPaths = [];
+
+      for (const path of filesMap.keys()) {
+        if (path.endsWith(".js") || path.endsWith(".mjs")) jsPaths.push(path);
+        else nonJsPaths.push(path);
+      }
+
+      for (const path of nonJsPaths) {
+        const blobUrl = URL.createObjectURL(filesMap.get(path).blob);
+        trackAppBlobUrl(slug, blobUrl);
+        urlByPath.set(path, blobUrl);
+      }
+
+      const jsTextCache = new Map();
+      const building = new Set();
+
+      function resolveAssetOrJs(fromPath, rawSpec) {
+        const rel = resolveRelativePath(fromPath, rawSpec);
+        if (rel && filesMap.has(rel)) return getOrBuildUrl(rel);
+        // Trunk wasm-bindgen bundles sometimes import './snippets/...' from inside 'app/'
+        const rootRel = rawSpec.replace(/^\.\//, "").replace(/^\//, "");
+        if (filesMap.has(rootRel)) return getOrBuildUrl(rootRel);
+        return null;
+      }
+
+      function getOrBuildUrl(path) {
+        if (urlByPath.has(path)) return urlByPath.get(path);
+        const fileObj = filesMap.get(path);
+        if (!fileObj) return null;
+        if (!(path.endsWith(".js") || path.endsWith(".mjs")) || building.has(path)) {
+          const u = URL.createObjectURL(fileObj.blob);
+          trackAppBlobUrl(slug, u);
+          urlByPath.set(path, u);
+          return u;
+        }
+        building.add(path);
+        let code = jsTextCache.get(path) || "";
+        // Rewrite static ES imports/exports: from './foo.js' or import './foo.js'
+        code = code.replace(/(\bfrom\s*|import\s*)(['"])(\.\.?\/[^'"]+)\2/g, (m, kw, q, spec) => {
+          const mapped = resolveAssetOrJs(path, spec);
+          return mapped ? `${kw}${q}${mapped}${q}` : m;
+        });
+        // Rewrite dynamic import('./foo.js')
+        code = code.replace(/(import\s*\(\s*)(['"])(\.\.?\/[^'"]+)\2(\s*\))/g, (m, pre, q, spec, post) => {
+          const mapped = resolveAssetOrJs(path, spec);
+          return mapped ? `${pre}${q}${mapped}${q}${post}` : m;
+        });
+        const blob = new Blob([code], { type: "application/javascript; charset=utf-8" });
+        const blobUrl = URL.createObjectURL(blob);
+        trackAppBlobUrl(slug, blobUrl);
+        urlByPath.set(path, blobUrl);
+        building.delete(path);
+        return blobUrl;
+      }
+
+      return { urlByPath, jsTextCache, jsPaths, getOrBuildUrl };
+    }
+
+    async function launchApp(app, preOpenedWin = null) {
+      if (!IS_HTTP_ORIGIN) {
+        if (preOpenedWin && !preOpenedWin.closed) preOpenedWin.close();
+        showProgress({
+          title: `Cannot launch ${app.name} from file://`,
+          error: "Open the launcher over http://localhost:8765/ (e.g. via python3 serve.py) so blob: module tabs share a valid origin."
+        });
+        return;
+      }
+
+      const targetWin = preOpenedWin || window.open("about:blank", "_blank");
+      if (!targetWin) {
+        showProgress({
+          title: `Popup blocked for ${app.name}`,
+          error: "Allow popups for this site so ArtCraft apps can open in a new tab."
+        });
+        return;
+      }
+
+      try {
+        targetWin.document.open();
+        targetWin.document.write(
+          `<!doctype html><title>Loading ${app.name}…</title>` +
+          `<body style="margin:0;background:#EAE5DC;color:#171A1D;font-family:system-ui,sans-serif;display:grid;place-items:center;height:100vh;">` +
+          `<div style="text-align:center"><p style="margin:0 0 6px;font-weight:600;">Preparing ${app.name} (${app.version})</p>` +
+          `<p style="margin:0;color:#5A6067;font-size:13px;">Reading cached bundle from IndexedDB…</p></div></body>`
+        );
+        targetWin.document.close();
+      } catch {
+        // Ignore if cross-origin
+      }
+
+      let filesMap = await ensureAppInMemory(app.slug);
+      if (!filesMap) {
+        if (!targetWin.closed) targetWin.close();
+        await downloadAndUnzip(app);
+        return;
+      }
+
+      const indexKey =
+        filesMap.has("index.html")
+          ? "index.html"
+          : Array.from(filesMap.keys()).find((k) => k.endsWith("/index.html")) || "";
+
+      if (!indexKey) {
+        if (!targetWin.closed) targetWin.close();
+        showProgress({ title: app.name, error: "No index.html found inside extracted zip archive." });
+        return;
+      }
+
+      const { urlByPath, jsTextCache, jsPaths, getOrBuildUrl } = buildVirtualBundleUrls(app.slug, filesMap);
+      for (const jsPath of jsPaths) {
+        jsTextCache.set(jsPath, await filesMap.get(jsPath).blob.text());
+      }
+      for (const jsPath of jsPaths) {
+        getOrBuildUrl(jsPath);
+      }
+
+      // Build JSON lookup table for virtual fetch/XHR inside the launched blob: tab
+      const virtualTable = {};
+      for (const [assetPath, blobUrl] of urlByPath.entries()) {
+        virtualTable[assetPath] = blobUrl;
+      }
+
+      const fetchShim = `<script>(function(){
+  const V=${JSON.stringify(virtualTable).replace(/</g, "\\u003c")};
+  const K=Object.keys(V).sort(function(a,b){return b.length-a.length;});
+  function mapUrl(u){
+    if(!u) return null;
+    let s = typeof u === "string" ? u : (u instanceof URL ? u.href : (u && u.url ? u.url : ""));
+    if(!s || s.startsWith("data:") || ((s.startsWith("http://") || s.startsWith("https://")) && !s.startsWith(location.origin))) return null;
+    if(s.startsWith("blob:")){
+      const b = s.split("#")[0].split("?")[0];
+      return Object.values(V).includes(b) ? b : null;
+    }
+    try{
+      if(s.startsWith(location.origin)) s = s.slice(location.origin.length);
+    }catch{}
+    s = s.split("?")[0].split("#")[0].replace(/^\\.\\//,"").replace(/^\\//,"");
+    if(V[s]) return V[s];
+    for(const k of K){
+      if(s.endsWith("/" + k)) return V[k];
+    }
+    return null;
+  }
+  const origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    const mapped = mapUrl(input);
+    if(mapped){
+      if(typeof Request !== "undefined" && input instanceof Request){
+        return origFetch(new Request(mapped, input), init);
+      }
+      return origFetch(mapped, init);
+    }
+    return origFetch(input, init);
+  };
+  if(typeof AudioWorklet !== "undefined" && AudioWorklet.prototype.addModule){
+    const origAddModule = AudioWorklet.prototype.addModule;
+    AudioWorklet.prototype.addModule = function(url, opts){
+      return origAddModule.call(this, mapUrl(url) || url, opts);
+    };
+  }
+  const origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url){
+    const mapped = mapUrl(url);
+    if(mapped) arguments[1] = mapped;
+    return origOpen.apply(this, arguments);
+  };
+})();<\/script>`;
+
+      let htmlText = await filesMap.get(indexKey).blob.text();
+      // Remove preload/modulepreload hints and stale SRI integrity attributes since all assets are rewritten to local blob: URLs
+      htmlText = htmlText.replace(/<link\b[^>]*\brel\s*=\s*(["'])(?:module)?preload\1[^>]*>/gi, "");
+      htmlText = htmlText.replace(/\s+integrity\s*=\s*(["'])[^"']*\1/gi, "");
+      htmlText = htmlText.replace(/\s+crossorigin(?:\s*=\s*(["'])[^"']*\1)?/gi, "");
+
+      for (const [assetPath, blobUrl] of urlByPath.entries()) {
+        if (assetPath === indexKey) continue;
+        const escaped = assetPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        // Trailing "#" makes anything the page appends (e.g. `"./app.js" + "?v=<hash>"` cache busters)
+        // land in the fragment, which blob: URL resolution ignores; a query string would 404 the blob.
+        htmlText = htmlText.replace(new RegExp(`(["'(])(?:\\./)?${escaped}(["')])`, "g"), `$1${blobUrl}#$2`);
+      }
+
+      if (/<head[^>]*>/i.test(htmlText)) {
+        htmlText = htmlText.replace(/<head[^>]*>/i, (m) => `${m}\n${fetchShim}`);
+      } else {
+        htmlText = `${fetchShim}\n${htmlText}`;
+      }
+
+      const entryBlob = new Blob([htmlText], { type: "text/html; charset=utf-8" });
+      const entryUrl = URL.createObjectURL(entryBlob);
+      trackAppBlobUrl(app.slug, entryUrl);
+
+      if (!targetWin.closed) {
+        targetWin.location.replace(entryUrl);
+      }
+    }
+
+    async function deleteCachedApp(slug) {
+      memoryStore.delete(slug);
+      revokeAppBlobUrls(slug);
+      try {
+        await idbDeleteApp(slug);
+      } catch {
+        // ignore
+      }
+      const reg = readRegistry();
+      delete reg[slug];
+      writeRegistry(reg);
+      renderTable();
+    }
+
+    async function deleteAllCachedApps() {
+      const reg = readRegistry();
+      const count = Object.keys(reg).length;
+      if (!count) return;
+      if (!window.confirm(`Delete all ${count} cached app(s) from browser storage?`)) {
+        return;
+      }
+      for (const slug of Object.keys(reg)) {
+        memoryStore.delete(slug);
+        revokeAppBlobUrls(slug);
+        try {
+          await idbDeleteApp(slug);
+        } catch {
+          // ignore
+        }
+      }
+      writeRegistry({});
+      renderTable();
+    }
+
+    function renderProxyGrid() {
+      const grid = document.getElementById("proxyGrid");
+      const sources = [];
+      const custom = getCustomProxyTemplate();
+      if (custom) sources.push({ label: "Custom proxy", note: "User configured" });
+      for (const p of PROXY_BUILDERS) sources.push({ label: p.label, note: p.note });
+
+      grid.innerHTML = sources.map((p) => {
+        const st = proxyProbeStatus.get(p.label);
+        const cls = st ? (st.ok ? "ok" : "err") : "";
+        const text = st ? st.text : p.note;
+        return `
+          <div class="proxy-chip">
+            <span class="p-name" title="${p.label}">${p.label}</span>
+            <span class="p-state ${cls}">${text}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function testProxiesLive() {
+      const btn = document.getElementById("testProxiesBtn");
+      btn.disabled = true;
+      btn.textContent = "Testing...";
+
+      // Tiny real GitHub release asset (~6 KB SHA256SUMS.txt) to verify genuine CORS + redirect handling
+      const probeTarget = "https://github.com/storytold/photocraft/releases/download/v0.23.1/SHA256SUMS.txt";
+      const candidates = getCandidateSources(probeTarget).filter((c) => c.label !== "Direct GitHub release");
+
+      for (const c of candidates) {
+        proxyProbeStatus.set(c.label, { ok: false, text: "testing..." });
+      }
+      renderProxyGrid();
+
+      await Promise.all(candidates.map(async (c) => {
+        const t0 = performance.now();
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 9000);
+        try {
+          const resp = await fetch(c.url, { signal: ctrl.signal });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const text = await resp.text();
+          if (!text.includes("photocraft")) throw new Error("Unexpected body");
+          const ms = Math.round(performance.now() - t0);
+          proxyProbeStatus.set(c.label, { ok: true, text: `OK · ${ms}ms` });
+        } catch (err) {
+          proxyProbeStatus.set(c.label, {
+            ok: false,
+            text: err.name === "AbortError" ? "timeout" : err.message
+          });
+        } finally {
+          clearTimeout(timer);
+          renderProxyGrid();
+        }
+      }));
+
+      btn.disabled = false;
+      btn.textContent = "Test proxies live";
+    }
+
+    function renderTable() {
+      const reg = readRegistry();
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const tbody = document.getElementById("appRows");
+
+      const filtered = ARTCRFT_APPS.filter((app) => {
+        const isCached = Boolean(reg[app.slug]);
+        if (activeFilter === "cached" && !isCached) return false;
+        if (activeFilter === "web" && app.noWebBuild) return false;
+        if (!q) return true;
+        return (
+          app.name.toLowerCase().includes(q) ||
+          app.slug.toLowerCase().includes(q) ||
+          app.cleanRoom.toLowerCase().includes(q)
+        );
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5">No matching ArtCraft applications.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((app) => {
+        const info = reg[app.slug];
+        const isCached = Boolean(info);
+
+        const archiveCell = app.noWebBuild
+          ? "—"
+          : `${app.sizeMb.toFixed(1)} MB`;
+
+        let statusHtml = `<span class="status-badge">Not cached</span>`;
+        if (app.noWebBuild) {
+          statusHtml = `<span class="status-badge unavailable">Desktop only</span>`;
+        } else if (isCached) {
+          statusHtml = `<span class="status-badge cached">Cached · ${formatMb(info.bytes || 0)}</span>`;
+        }
+
+        let actionsHtml = "";
+        if (app.noWebBuild) {
+          actionsHtml = `<a class="btn secondary sm" href="${app.releaseUrl}" target="_blank" rel="noopener">Desktop releases ↗</a>`;
+        } else {
+          const primaryBtn = isCached
+            ? `<button class="btn sm" type="button" data-action="launch" data-slug="${app.slug}">Open tab ↗</button>`
+            : `<button class="btn sm" type="button" data-action="download" data-slug="${app.slug}">Download</button>`;
+          const deleteBtn = isCached
+            ? `<button class="btn danger sm" type="button" data-action="delete" data-slug="${app.slug}">Delete</button>`
+            : "";
+          const relUrl = app.url.replace(/\/download\/([^/]+)\/.*$/, "/tag/$1");
+          actionsHtml = `
+            ${primaryBtn}
+            ${deleteBtn}
+            <a class="ext-link" href="${relUrl}" target="_blank" rel="noopener" title="View GitHub release">↗</a>
+          `;
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="app-name-cell">
+                <span class="app-title">${app.name}</span>
+                <span class="version-tag">${app.version}</span>
+              </div>
+            </td>
+            <td class="equiv-cell">${app.cleanRoom}</td>
+            <td class="size-cell">${archiveCell}</td>
+            <td>${statusHtml}</td>
+            <td><div class="actions">${actionsHtml}</div></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Event bindings
+    document.getElementById("appRows").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const app = ARTCRFT_APPS.find((x) => x.slug === btn.dataset.slug);
+      if (!app) return;
+
+      if (btn.dataset.action === "download") {
+        await downloadAndUnzip(app);
+      } else if (btn.dataset.action === "launch") {
+        const launchWin = IS_HTTP_ORIGIN ? window.open("about:blank", "_blank") : null;
+        await launchApp(app, launchWin);
+      } else if (btn.dataset.action === "delete") {
+        await deleteCachedApp(app.slug);
+      }
+    });
+
+    document.getElementById("searchInput").addEventListener("input", renderTable);
+
+    document.querySelector(".filter-group").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-filter]");
+      if (!btn) return;
+      activeFilter = btn.dataset.filter;
+      for (const b of document.querySelectorAll(".filter-btn")) {
+        b.classList.toggle("active", b === btn);
+      }
+      renderTable();
+    });
+
+    document.getElementById("clearAllBtn").addEventListener("click", deleteAllCachedApps);
+
+    document.getElementById("toggleProxyBtn").addEventListener("click", () => {
+      const panel = document.getElementById("proxyPanel");
+      const btn = document.getElementById("toggleProxyBtn");
+      panel.hidden = !panel.hidden;
+      btn.setAttribute("aria-expanded", String(!panel.hidden));
+      if (!panel.hidden) renderProxyGrid();
+    });
+
+    document.getElementById("closeProxyBtn").addEventListener("click", () => {
+      document.getElementById("proxyPanel").hidden = true;
+      document.getElementById("toggleProxyBtn").setAttribute("aria-expanded", "false");
+    });
+
+    document.getElementById("testProxiesBtn").addEventListener("click", testProxiesLive);
+
+    document.getElementById("saveCustomProxyBtn").addEventListener("click", () => {
+      const val = document.getElementById("customProxyInput").value.trim();
+      try {
+        if (val) localStorage.setItem(CUSTOM_PROXY_LS_KEY, val);
+        else localStorage.removeItem(CUSTOM_PROXY_LS_KEY);
+      } catch {
+        // ignore
+      }
+      renderProxyGrid();
+    });
+
+    document.getElementById("clearCustomProxyBtn").addEventListener("click", () => {
+      document.getElementById("customProxyInput").value = "";
+      try {
+        localStorage.removeItem(CUSTOM_PROXY_LS_KEY);
+      } catch {
+        // ignore
+      }
+      renderProxyGrid();
+    });
+
+    document.getElementById("cancelTransferBtn").addEventListener("click", () => {
+      if (activeTransferController) activeTransferController.abort();
+    });
+
+    document.getElementById("dismissPopupBtn").addEventListener("click", () => {
+      document.getElementById("progressPopup").hidden = true;
+    });
+
+    window.addEventListener("pagehide", () => {
+      for (const slug of Array.from(blobUrlsBySlug.keys())) {
+        revokeAppBlobUrls(slug);
+      }
+    });
+
+    // Init
+    document.getElementById("customProxyInput").value = getCustomProxyTemplate();
+    updateStorageSummary();
+    renderProxyGrid();
+    renderTable();
+  </script>
+</body>
+</html>
